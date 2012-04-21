@@ -20,6 +20,7 @@
 
 ##
 # Options
+#
 
 # Route to working directorys
 BUSRC=/mnt/raid-live/work
@@ -40,7 +41,7 @@ FROMMAIL="admin@myhost.com"
 
 ##
 # executable files
-
+#
 DATE=/bin/date
 RSYNC=/usr/bin/rsync
 CP=/bin/cp
@@ -80,26 +81,26 @@ EMAILTMP="/tmp/tmpfil_456"$RANDOM
 #
 function do_backup {
 
-	# Remount the backup device to rw
-	$MOUNT -o remount,rw $MOUNT_DEVICE $MOUNT_LOCATION;
+    # Remount the backup device to rw
+    $MOUNT -o remount,rw $MOUNT_DEVICE $MOUNT_LOCATION;
 
-	if (( $? )); then
-		$DATE >> $LOGFILE;
-		$ECHO "ERROR: could not remount $MOUNT_LOCATION readwrite" >> $LOGFILE;
-		return;
-	fi;
+    if (( $? )); then
+        $DATE >> $LOGFILE;
+        $ECHO "ERROR: could not remount $MOUNT_LOCATION readwrite" >> $LOGFILE;
+        return;
+    fi;
 
-	# Log file first line
-	$DATE > $LOGFILE;
+    # Log file first line
+    $DATE > $LOGFILE;
 
-	# run rsync, output to logfile
-	$RSYNC $OPTS $BUSRC $BUDIR/current &>> $LOGFILE;
+    # run rsync, output to logfile
+    $RSYNC $OPTS $BUSRC $BUDIR/current &>> $LOGFILE;
 
-	# update the date on "current" directory
-	$TOUCH $BUDIR/current;
+    # update the date on "current" directory
+    $TOUCH $BUDIR/current;
 
-	# Create hard links for the "current" directory
-	$CP -al $BUDIR/current/* $BUDEST/;
+    # Create hard links for the "current" directory
+    $CP -al $BUDIR/current/* $BUDEST/;
 
     # Finish logfile
     $ECHO "FINISHED" >> $LOGFILE;
@@ -117,39 +118,39 @@ function fappend {
 # Email sender function
 #
 function send_email {
-	$RM -f $EMAILTMP
+    $RM -f $EMAILTMP
 
-	fappend $EMAILTMP "From: $FROMMAIL";
-	fappend $EMAILTMP "To: $TOEMAIL";
-	fappend $EMAILTMP "Reply-To: $FROMMAIL";
-	fappend $EMAILTMP "Subject: $SUBJECT";
-	fappend $EMAILTMP "";
-	$CAT $LOGFILE >> $EMAILTMP
-	fappend $EMAILTMP "";
-	fappend $EMAILTMP "";
-	$CAT $EMAILTMP | $SENDMAIL -t;
-	$RM $EMAILTMP;
+    fappend $EMAILTMP "From: $FROMMAIL";
+    fappend $EMAILTMP "To: $TOEMAIL";
+    fappend $EMAILTMP "Reply-To: $FROMMAIL";
+    fappend $EMAILTMP "Subject: $SUBJECT";
+    fappend $EMAILTMP "";
+    $CAT $LOGFILE >> $EMAILTMP
+    fappend $EMAILTMP "";
+    fappend $EMAILTMP "";
+    $CAT $EMAILTMP | $SENDMAIL -t;
+    $RM $EMAILTMP;
 }
 
 ##
-# Shut down function
+# Shutdown function
 #
 function do_shutodown {
 
     # Check if someone is still working :)
-	STATUS=`$SMBSTATUS | $GREP "No locked files"`;
-	LOGINSTATUS=`$WHO -q | $GREP users | $CUT -d '=' -f2`;
+    STATUS=`$SMBSTATUS | $GREP "No locked files"`;
+    LOGINSTATUS=`$WHO -q | $GREP users | $CUT -d '=' -f2`;
 
-	if [ "$STATUS" == "No locked files"] && [ "$LOGINSTATUS" -gt 0 ]; then
-	    # Nobody online, nobody working, shutdown
-		$SHUTDOWN -h +5
-		return;
-	fi;
+    if [ "$STATUS" == "No locked files"] && [ "$LOGINSTATUS" -gt 0 ]; then
+        # Nobody online, nobody working, shutdown
+        $SHUTDOWN -h +5
+        return;
+    fi;
 
     # Somebody still working, log it
-	$ECHO "ERROR: could not shut down the system!" >> $LOGFILE;
-	$SMBSTATUS &>> $LOGFILE;
-	$WHO -q &>> $LOGFILE;
+    $ECHO "ERROR: could not shut down the system!" >> $LOGFILE;
+    $SMBSTATUS &>> $LOGFILE;
+    $WHO -q &>> $LOGFILE;
 
     # Remount backup device read only
     $MOUNT -o remount,ro $MOUNT_DEVICE $MOUNT_LOCATION ;
